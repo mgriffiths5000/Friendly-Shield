@@ -797,7 +797,7 @@ const CustomCoverTooltip = ({ style = {} }) => {
 const TierCard = ({ icon, tier, sub }) => {
   const [hovered, setHovered] = useState(false);
   const btnRef = useRef(null);
-  const [tipPos, setTipPos] = useState({ top: 0, left: 0, _flipped: false });
+  const [tipPos, setTipPos] = useState({ top: 0, left: 0, _flipped: false, _caretLeft: 0 });
   const TOOLTIP_W = 240;
   const TOOLTIP_H = 280;
   const handleEnter = () => {
@@ -807,62 +807,47 @@ const TierCard = ({ icon, tier, sub }) => {
       const idealLeft = anchorCentreX - TOOLTIP_W / 2;
       const left = Math.max(8, Math.min(idealLeft, window.innerWidth - TOOLTIP_W - 8));
       const wouldClip = r.bottom + TOOLTIP_H + 8 > window.innerHeight;
-      setTipPos({
-        top: wouldClip ? r.top - TOOLTIP_H - 8 : r.bottom + 8,
-        left,
-        _flipped: wouldClip,
-        _caretLeft: anchorCentreX,
-      });
+      setTipPos({ top: wouldClip ? r.top - TOOLTIP_H - 8 : r.bottom + 8, left, _flipped: wouldClip, _caretLeft: anchorCentreX });
     }
     setHovered(true);
   };
+  // Bronze gets dark text to match Silver and Gold readability
+  const textColor = tier === "Silver" ? "#1a1a1a" : tier === "Gold" ? "#2a1800" : "#1a1a1a";
+  const subColor  = tier === "Silver" ? "rgba(0,0,0,0.65)" : tier === "Gold" ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.65)";
+  const hintColor = tier === "Silver" ? "rgba(0,0,0,0.5)" : tier === "Gold" ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.5)";
+  const hintBg    = "rgba(0,0,0,0.1)";
+  const shadow    = tier === "Silver" ? "0 1px 2px rgba(255,255,255,0.6)" : "0 1px 2px rgba(255,255,255,0.3)";
   return (
     <div
       ref={btnRef}
       onMouseEnter={handleEnter}
       onMouseLeave={() => setHovered(false)}
+      onTouchStart={e => { e.preventDefault(); hovered ? setHovered(false) : handleEnter(); }}
       style={{
         background: METALLIC_GRAD[tier],
         borderRadius: 14,
-        padding: "22px 12px 18px",
+        padding: "22px 12px 14px",
         textAlign: "center",
         cursor: "default",
         boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
         border: "1px solid rgba(255,255,255,0.25)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
       }}
     >
       <div style={{ fontSize: 42, marginBottom: 10, lineHeight: 1 }}>{icon}</div>
-      <div style={{
-        fontSize: 17,
-        fontWeight: 800,
-        color: METALLIC_TEXT[tier],
-        textShadow: tier === "Silver" ? "0 1px 2px rgba(255,255,255,0.6)" : "0 1px 3px rgba(0,0,0,0.5)",
-        marginBottom: 4,
-        letterSpacing: "0.02em",
-      }}>
+      <div style={{ fontSize: 17, fontWeight: 800, color: textColor, textShadow: shadow, marginBottom: 4, letterSpacing: "0.02em" }}>
         {tier}
       </div>
-      <div style={{
-        fontSize: 12,
-        fontWeight: 600,
-        color: tier === "Silver" ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.88)",
-        textShadow: tier === "Silver" ? "none" : "0 1px 2px rgba(0,0,0,0.4)",
-        marginBottom: 6,
-      }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: subColor, marginBottom: 0, flex: 1 }}>
         {sub}
       </div>
-      <div style={{
-        display: "inline-block",
-        fontSize: 10,
-        fontWeight: 600,
-        color: tier === "Silver" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.7)",
-        background: tier === "Silver" ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.2)",
-        borderRadius: 999,
-        padding: "2px 8px",
-      }}>
+      {/* Hint badge pinned to bottom, aligned across all cards */}
+      <div style={{ marginTop: 10, display: "inline-block", fontSize: 10, fontWeight: 600, color: hintColor, background: hintBg, borderRadius: 999, padding: "2px 8px" }}>
         ℹ <span className="fs-tap-hint" />
       </div>
-      {hovered && <BenefitTooltip tier={tier} style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped }} />}
+      {hovered && <BenefitTooltip tier={tier} style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped, _caretLeft: tipPos._caretLeft }} />}
     </div>
   );
 };
@@ -1304,7 +1289,7 @@ export default function FriendlyShieldForm() {
             <p style={{ color: "#6B7280", fontSize: 14, margin: 0, lineHeight: 1.7 }}>
               Enter your date of birth below to{" "}
               <strong style={{ color: "#374151" }}>see your personalised prices instantly</strong>
-              {" "}— no medical questions, no waiting. If you like what you see, you can{" "}
+              {" "}with no medical questions and no waiting. If you like what you see, you can{" "}
               <strong style={{ color: "#374151" }}>set up your policy in under 5 minutes</strong>
               {" "}without speaking to anyone.
             </p>
@@ -2038,8 +2023,8 @@ export default function FriendlyShieldForm() {
         .fs-label { font-size: 14px; }
         .fs-q { font-size: 20px; }
         .fs-consent-box { font-size: 13px; max-height: 180px; }
-        .fs-outer { padding: 16px; }
-        .fs-card { border-radius: 16px; max-width: 520px; margin: 0 auto; }
+        .fs-outer { padding: 0; }
+        .fs-card { border-radius: 0; max-width: 100%; margin: 0; box-shadow: none !important; }
         .fs-content { padding: 22px 22px 32px; }
         .fs-brand-title { font-size: 14px; }
         .fs-brand-sub { font-size: 10px; }
