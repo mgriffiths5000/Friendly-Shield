@@ -222,7 +222,7 @@ const BENEFITS = {
     { icon: "🌿", label: "Natural death benefit", value: "GBP2,500 (2-yr qualifying period)" },
     { icon: "🦷", label: "Friendly Dentist+", value: "24/7 virtual dentist access" },
     { icon: "🩺", label: "Friendly GP+", value: "24/7 virtual GP - immediate family" },
-    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private facilities" },
+    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private medical cover" },
   ],
   Silver: [
     { icon: "💰", label: "Income benefit", value: "GBP1,500/month for up to 3 months" },
@@ -231,7 +231,7 @@ const BENEFITS = {
     { icon: "🌿", label: "Natural death benefit", value: "GBP2,500 (2-yr qualifying period)" },
     { icon: "🦷", label: "Friendly Dentist+", value: "24/7 virtual dentist access" },
     { icon: "🩺", label: "Friendly GP+", value: "24/7 virtual GP - immediate family" },
-    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private facilities" },
+    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private medical cover" },
   ],
   Gold: [
     { icon: "💰", label: "Income benefit", value: "GBP2,250/month for up to 3 months" },
@@ -240,7 +240,7 @@ const BENEFITS = {
     { icon: "🌿", label: "Natural death benefit", value: "GBP2,500 (2-yr qualifying period)" },
     { icon: "🦷", label: "Friendly Dentist+", value: "24/7 virtual dentist access" },
     { icon: "🩺", label: "Friendly GP+", value: "24/7 virtual GP - immediate family" },
-    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private facilities" },
+    { icon: "🏥", label: "Rehabilitation cover", value: "GBP1,000 private medical cover" },
   ],
 };
 
