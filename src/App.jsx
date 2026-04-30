@@ -556,13 +556,17 @@ const ProgressBar = ({ step }) => {
 // ─── BENEFIT TOOLTIP (pricing table hover) ────────────────────────────────────
 const BenefitTooltip = ({ tier, style = {} }) => {
   const t = TIER_STYLE[tier] || {};
-  const { _flipped, ...rest } = style;
+  const { _flipped, _caretLeft, ...rest } = style;
   const caretStyle = _flipped
     ? { bottom: -7, top: "auto", borderBottom: `2px solid ${t.border || "#e5e7eb"}`, borderRight: `2px solid ${t.border || "#e5e7eb"}` }
     : { top: -7, borderTop: `2px solid ${t.border || "#e5e7eb"}`, borderLeft: `2px solid ${t.border || "#e5e7eb"}` };
+  // _caretLeft is the viewport x of the anchor element centre, relative to the tooltip left edge
+  const caretPos = _caretLeft !== undefined
+    ? { left: Math.max(10, Math.min(_caretLeft - (rest.left || 0), 220)), marginLeft: 0 }
+    : { left: "50%", marginLeft: -6 };
   return (
     <div style={{ position: "fixed", zIndex: 9999, background: "#fff", border: `2px solid ${t.border || "#e5e7eb"}`, borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,0.2)", padding: "13px 15px", width: 240, pointerEvents: "none", ...rest }}>
-      <div style={{ position: "absolute", left: "50%", marginLeft: -6, width: 12, height: 12, background: "#fff", transform: "rotate(45deg)", ...caretStyle }} />
+      <div style={{ position: "absolute", width: 12, height: 12, background: "#fff", transform: "rotate(45deg)", ...caretStyle, ...caretPos }} />
       <div style={{ fontSize: 10, fontWeight: 800, color: t.color, marginBottom: 9, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>
         {tier} {"\u2014"} What{"'"}s included
       </div>
@@ -600,10 +604,11 @@ const PricingTable = ({ band, selectedLevel, selectedType, onSelectLevel, onSele
     const ref = tierHeaderRefs[tierName];
     if (!ref?.current) return;
     const r = ref.current.getBoundingClientRect();
-    const idealLeft = r.left + r.width / 2 - TOOLTIP_W / 2;
+    const anchorCentreX = r.left + r.width / 2;
+    const idealLeft = anchorCentreX - TOOLTIP_W / 2;
     const left = Math.max(8, Math.min(idealLeft, window.innerWidth - TOOLTIP_W - 8));
     const fitsAbove = r.top - TOOLTIP_H - 10 > 0;
-    setTooltip({ tier: tierName, top: fitsAbove ? r.top - TOOLTIP_H - 10 : r.bottom + 10, left, _flipped: fitsAbove });
+    setTooltip({ tier: tierName, top: fitsAbove ? r.top - TOOLTIP_H - 10 : r.bottom + 10, left, _flipped: fitsAbove, _caretLeft: anchorCentreX });
   };
 
   const showCustomTipFn = () => {
@@ -643,7 +648,7 @@ const PricingTable = ({ band, selectedLevel, selectedType, onSelectLevel, onSele
             }}
           >
             <div className="fs-small" style={{ fontWeight: 700, color: t.color }}>{t.name}</div>
-            <div className="fs-xsmall" style={{ color: "#9CA3AF", marginTop: 2 }}>{"\u24d8"} hover</div>
+            <div className="fs-xsmall" style={{ color: "#9CA3AF", marginTop: 2 }}>{"\u24d8"} <span className="fs-tap-hint" /></div>
           </div>
         ))}
         {/* Custom header */}
@@ -662,7 +667,7 @@ const PricingTable = ({ band, selectedLevel, selectedType, onSelectLevel, onSele
           }}
         >
           <div className="fs-small" style={{ fontWeight: 700, color: "#374151", lineHeight: 1.2 }}>Need more cover?</div>
-          <div className="fs-xsmall" style={{ color: "#9CA3AF", marginTop: 2 }}>{"\u24d8"} hover</div>
+          <div className="fs-xsmall" style={{ color: "#9CA3AF", marginTop: 2 }}>{"\u24d8"} <span className="fs-tap-hint" /></div>
         </div>
 
         {/* ── Row 2: Accidents Only ── */}
@@ -798,13 +803,15 @@ const TierCard = ({ icon, tier, sub }) => {
   const handleEnter = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      const idealLeft = r.left + r.width / 2 - TOOLTIP_W / 2;
+      const anchorCentreX = r.left + r.width / 2;
+      const idealLeft = anchorCentreX - TOOLTIP_W / 2;
       const left = Math.max(8, Math.min(idealLeft, window.innerWidth - TOOLTIP_W - 8));
       const wouldClip = r.bottom + TOOLTIP_H + 8 > window.innerHeight;
       setTipPos({
         top: wouldClip ? r.top - TOOLTIP_H - 8 : r.bottom + 8,
         left,
         _flipped: wouldClip,
+        _caretLeft: anchorCentreX,
       });
     }
     setHovered(true);
@@ -853,7 +860,7 @@ const TierCard = ({ icon, tier, sub }) => {
         borderRadius: 999,
         padding: "2px 8px",
       }}>
-        ℹ hover for details
+        ℹ <span className="fs-tap-hint" />
       </div>
       {hovered && <BenefitTooltip tier={tier} style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped }} />}
     </div>
@@ -910,7 +917,7 @@ const CustomTierCard = ({ onSelect }) => {
         Tailored protection
       </div>
       <div style={{ display: "inline-block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.2)", borderRadius: 999, padding: "2px 8px" }}>
-        ℹ hover for details
+        ℹ <span className="fs-tap-hint" />
       </div>
       {hovered && <CustomCoverTooltip style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped }} />}
     </div>
@@ -2024,7 +2031,7 @@ export default function FriendlyShieldForm() {
 
   // ─── SHELL ────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: "linear-gradient(145deg, #0f4c2a 0%, #1E824C 55%, #2d9e62 100%)", minHeight: "100vh" }}>
+    <div className="fs-page-bg" style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: "100vh" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
         .fs-prose { font-size: 13px; line-height: 1.75; }
@@ -2046,7 +2053,16 @@ export default function FriendlyShieldForm() {
         .fs-price  { font-size: 17px; font-weight: 800; }
         .fs-barprice { font-size: 19px; font-weight: 800; }
 
-        /* Mobile: tier card grid — 3 cols on top, Custom spans full width below */
+        /* hover vs tap label */
+        .fs-tap-hint::after { content: "tap"; }
+        @media (min-width: 768px) {
+          .fs-tap-hint::after { content: "hover"; }
+        }
+        /* Mobile: no green background, just plain page */
+        .fs-page-bg { background: #f3f4f6; }
+        @media (min-width: 768px) {
+          .fs-page-bg { background: linear-gradient(145deg, #0f4c2a 0%, #1E824C 55%, #2d9e62 100%); }
+        }
         .fs-tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
         .fs-custom-card { grid-column: 1 / -1; }
         @media (min-width: 520px) {
