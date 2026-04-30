@@ -211,7 +211,7 @@ async function sendPartialWebhook(payload) {
 const TIER_STYLE = {
   Bronze: { color: BRONZE_C, bg: BRONZE_BG, border: "#d97706" },
   Silver: { color: SILVER_C, bg: SILVER_BG, border: "#9ca3af" },
-  Gold:   { color: GOLD_C,   bg: GOLD_BG,   border: "#b45309" },
+  Gold:   { color: GOLD_C,   bg: GOLD_BG,   border: "#c9960c" },
 };
 
 const BENEFITS = {
@@ -593,7 +593,7 @@ const PricingTable = ({ band, selectedLevel, selectedType, onSelectLevel, onSele
   const tiers = [
     { name: "Bronze", color: BRONZE_C, bg: BRONZE_BG, border: "#d97706" },
     { name: "Silver", color: SILVER_C, bg: SILVER_BG, border: "#9ca3af" },
-    { name: "Gold",   color: GOLD_C,   bg: GOLD_BG,   border: "#b45309" },
+    { name: "Gold",   color: GOLD_C,   bg: GOLD_BG,   border: "#c9960c" },
   ];
   const TOOLTIP_W = 240;
   const TOOLTIP_H = 280;
@@ -794,8 +794,7 @@ const CustomCoverTooltip = ({ style = {} }) => {
   );
 };
 
-const TierCard = ({ icon, tier, sub }) => {
-  const [hovered, setHovered] = useState(false);
+const TierCard = ({ icon, tier, sub, isOpen, onOpen }) => {
   const btnRef = useRef(null);
   const [tipPos, setTipPos] = useState({ top: 0, left: 0, _flipped: false, _caretLeft: 0 });
   const TOOLTIP_W = 240;
@@ -809,7 +808,7 @@ const TierCard = ({ icon, tier, sub }) => {
       const wouldClip = r.bottom + TOOLTIP_H + 8 > window.innerHeight;
       setTipPos({ top: wouldClip ? r.top - TOOLTIP_H - 8 : r.bottom + 8, left, _flipped: wouldClip, _caretLeft: anchorCentreX });
     }
-    setHovered(true);
+    onOpen(tier);
   };
   // Bronze gets dark text to match Silver and Gold readability
   const textColor = tier === "Silver" ? "#1a1a1a" : tier === "Gold" ? "#2a1800" : "#1a1a1a";
@@ -821,8 +820,8 @@ const TierCard = ({ icon, tier, sub }) => {
     <div
       ref={btnRef}
       onMouseEnter={handleEnter}
-      onMouseLeave={() => setHovered(false)}
-      onTouchStart={e => { e.preventDefault(); hovered ? setHovered(false) : handleEnter(); }}
+      onMouseLeave={() => onOpen(null)}
+      onTouchStart={e => { e.preventDefault(); isOpen ? onOpen(null) : handleEnter(); }}
       style={{
         background: METALLIC_GRAD[tier],
         borderRadius: 14,
@@ -845,9 +844,9 @@ const TierCard = ({ icon, tier, sub }) => {
       </div>
       {/* Hint badge pinned to bottom, aligned across all cards */}
       <div style={{ marginTop: 10, display: "inline-block", fontSize: 10, fontWeight: 600, color: hintColor, background: hintBg, borderRadius: 999, padding: "2px 8px" }}>
-        ℹ <span className="fs-tap-hint" />
+        {"\u24d8"} <span className="fs-tap-hint" />
       </div>
-      {hovered && <BenefitTooltip tier={tier} style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped, _caretLeft: tipPos._caretLeft }} />}
+      {isOpen && <BenefitTooltip tier={tier} style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped, _caretLeft: tipPos._caretLeft }} />}
     </div>
   );
 };
@@ -902,7 +901,7 @@ const CustomTierCard = ({ onSelect }) => {
         Tailored protection
       </div>
       <div style={{ display: "inline-block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.2)", borderRadius: 999, padding: "2px 8px" }}>
-        ℹ <span className="fs-tap-hint" />
+        {"\u24d8"} <span className="fs-tap-hint" />
       </div>
       {hovered && <CustomCoverTooltip style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped }} />}
     </div>
@@ -989,6 +988,7 @@ export default function FriendlyShieldForm() {
   const [optOutSMS, setOptOutSMS] = useState(false);
   const [optOutPost, setOptOutPost] = useState(false);
   const [isCustomCover, setIsCustomCover] = useState(false);
+  const [activeTierCard, setActiveTierCard] = useState(null);
   const [smokerStatus, setSmokerStatus] = useState(null);   // true=yes, false=no
   const [everSmoked, setEverSmoked] = useState(null);       // true=yes, false=no
   const [lastSmokedMonth, setLastSmokedMonth] = useState("");
@@ -1083,6 +1083,7 @@ export default function FriendlyShieldForm() {
   };
 
   const handleDOBSubmit = () => {
+    setActiveTierCard(null);
     const day = parseInt(dobDay, 10);
     const month = parseInt(dobMonth, 10);
     const year = parseInt(dobYear, 10);
@@ -1295,9 +1296,9 @@ export default function FriendlyShieldForm() {
             </p>
           </div>
           <div className="fs-tier-grid" style={{ marginBottom: 24 }}>
-            <TierCard icon="🥉" tier="Bronze" sub="Essential cover" />
-            <TierCard icon="🥈" tier="Silver" sub="Enhanced cover" />
-            <TierCard icon="🥇" tier="Gold" sub="Comprehensive" />
+            <TierCard icon="🥉" tier="Bronze" sub="Essential cover" isOpen={activeTierCard === "Bronze"} onOpen={setActiveTierCard} />
+            <TierCard icon="🥈" tier="Silver" sub="Enhanced cover" isOpen={activeTierCard === "Silver"} onOpen={setActiveTierCard} />
+            <TierCard icon="🥇" tier="Gold"   sub="Comprehensive"  isOpen={activeTierCard === "Gold"}   onOpen={setActiveTierCard} />
             <div className="fs-custom-card">
               <CustomTierCard onSelect={() => {
                 setIsCustomCover(true);
