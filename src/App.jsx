@@ -92,29 +92,40 @@ const OCCUPATIONS = [
 const TOTAL_STEPS = 13;
 const ZAPIER_WEBHOOK_URL = "https://hooks.zapier.com/hooks/catch/26526769/uvzadth/";
 
-async function sendApplicationEmail(data) {
+// sendApplicationEmail now just builds and returns the complete payload.
+// firePartial sends it to Zapier as a single call with session_id and status: "complete".
+function buildApplicationPayload(data) {
   const {
     coverLevel, coverTypeLabel, price, band,
-    firstName, lastName, email, phone,
+    salutation, firstName, lastName, email, phone,
     addr1, addr2, city, postcode,
     dobDay, dobMonth, dobYear,
     employment, income, occupation,
     hours16, gpReg, sortCode, accountNum,
+    accountName, paymentDay,
+    optOutEmail, optOutPhone, optOutSMS, optOutPost,
+    smokerStatus, everSmoked, lastSmokedMonth, lastSmokedYear,
   } = data;
   const timestamp = new Date().toLocaleString("en-GB", {
     day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
-  const payload = {
-    subject: `New Friendly Shield Application - ${firstName} ${lastName} (${coverLevel}, GBP${price}/month)`,
+  const ordSfx = d => {
+    if (!d) return "";
+    if (d >= 11 && d <= 13) return `${d}th`;
+    return `${d}${["th","st","nd","rd"][d % 10] || "th"}`;
+  };
+  return {
+    subject: `New Friendly Shield Application - ${salutation} ${firstName} ${lastName} (${coverLevel}, \u00a3${price}/month)`,
     submitted_at: timestamp,
+    status: "complete",
     cover_level: coverLevel,
     cover_type: coverTypeLabel,
-    monthly_premium: `GBP${price}`,
+    monthly_premium: `\u00a3${price}`,
     age_band: BAND_LABELS[band],
+    salutation,
     first_name: firstName,
     last_name: lastName,
-    full_name: `${firstName} ${lastName}`,
-    salutation,
+    full_name: `${salutation} ${firstName} ${lastName}`,
     email,
     phone,
     date_of_birth: `${dobDay}/${dobMonth}/${dobYear}`,
@@ -124,27 +135,36 @@ async function sendApplicationEmail(data) {
     postcode,
     full_address: [addr1, addr2, city, postcode].filter(Boolean).join(", "),
     employment_status: employment,
-    gross_annual_income: `GBP${Number(income).toLocaleString("en-GB")}`,
+    gross_annual_income: `\u00a3${Number(income).toLocaleString("en-GB")}`,
     occupation,
     works_16_plus_hours: hours16 ? "Yes" : "No",
     uk_gp_registered_2_years: gpReg ? "Yes" : "No",
     sort_code: sortCode,
     account_number: accountNum,
+    account_name: accountName || "",
+    payment_day: paymentDay ? `${ordSfx(paymentDay)} of each month` : "",
+    opt_out_email: optOutEmail ? "Opt out" : "",
+    opt_out_phone: optOutPhone ? "Opt out" : "",
+    opt_out_sms: optOutSMS ? "Opt out" : "",
+    opt_out_post: optOutPost ? "Opt out" : "",
+    smoker: smokerStatus === true ? "Yes" : smokerStatus === false ? "No" : "",
+    ever_smoked: everSmoked === true ? "Yes" : everSmoked === false ? "No" : "",
+    last_smoked: everSmoked && lastSmokedMonth && lastSmokedYear ? `${lastSmokedMonth}/${lastSmokedYear}` : "",
     message: [
       "NEW FRIENDLY SHIELD APPLICATION",
       `Submitted: ${timestamp}`,
       "",
       "PLAN",
-      `Cover Level: ${coverLevel}`,
-      `Cover Type: ${coverTypeLabel}`,
-      `Premium: GBP${price}/month`,
-      `Age Band: ${BAND_LABELS[band]}`,
+      `Cover Level:     ${coverLevel}`,
+      `Cover Type:      ${coverTypeLabel}`,
+      `Premium:         \u00a3${price}/month`,
+      `Age Band:        ${BAND_LABELS[band]}`,
       "",
       "PERSONAL",
-      `Name: ${firstName} ${lastName}`,
-      `Email: ${email}`,
-      `Phone: ${phone}`,
-      `DOB: ${dobDay}/${dobMonth}/${dobYear}`,
+      `Name:            ${salutation} ${firstName} ${lastName}`,
+      `Email:           ${email}`,
+      `Phone:           ${phone}`,
+      `DOB:             ${dobDay}/${dobMonth}/${dobYear}`,
       "",
       "ADDRESS",
       addr1,
@@ -152,25 +172,24 @@ async function sendApplicationEmail(data) {
       `${city}, ${postcode}`,
       "",
       "EMPLOYMENT",
-      `Status: ${employment}`,
-      `Income: GBP${Number(income).toLocaleString("en-GB")}`,
-      `Occupation: ${occupation}`,
-      `16+ hrs/week: ${hours16 ? "Yes" : "No"}`,
-      `UK GP 2+ yrs: ${gpReg ? "Yes" : "No"}`,
+      `Status:          ${employment}`,
+      `Income:          \u00a3${Number(income).toLocaleString("en-GB")}`,
+      `Occupation:      ${occupation}`,
+      `16+ hrs/week:    ${hours16 ? "Yes" : "No"}`,
+      `UK GP 2+ yrs:   ${gpReg ? "Yes" : "No"}`,
       "",
       "BANK",
-      `Sort Code: ${sortCode}`,
-      `Account: ${accountNum}`,
+      `Account Name:    ${accountName || ""}`,
+      `Sort Code:       ${sortCode}`,
+      `Account Number:  ${accountNum}`,
+      `Payment Day:     ${paymentDay ? ordSfx(paymentDay) + " of each month" : ""}`,
+      "",
+      "MARKETING OPT-OUTS",
+      `Email: ${optOutEmail ? "Opted out" : "OK"}  Phone: ${optOutPhone ? "Opted out" : "OK"}  SMS: ${optOutSMS ? "Opted out" : "OK"}  Post: ${optOutPost ? "Opted out" : "OK"}`,
       "",
       "Declaration agreed.",
     ].filter(l => l !== undefined).join("\n"),
   };
-  const r = await fetch(ZAPIER_WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(payload),
-  });
-  if (!r.ok) throw new Error(`Webhook error: ${r.status}`);
 }
 
 // ─── PARTIAL WEBHOOK — fired silently at every step transition ────────────────
@@ -1127,22 +1146,29 @@ export default function FriendlyShieldForm() {
     setSending(true);
     setEmailError(false);
     try {
-      await sendApplicationEmail({
+      const completePayload = buildApplicationPayload({
         coverLevel, coverTypeLabel, price, band,
         salutation, firstName, lastName, email, phone,
         addr1, addr2, city, postcode,
         dobDay, dobMonth, dobYear,
         employment, income, occupation,
         hours16, gpReg, sortCode, accountNum,
+        accountName, paymentDay,
+        optOutEmail, optOutPhone, optOutSMS, optOutPost,
+        smokerStatus, everSmoked, lastSmokedMonth, lastSmokedYear,
       });
-      // Mark row as complete in Google Sheets
-      firePartial("Complete — Application Submitted", {
-        status: "complete",
-        sort_code: sortCode,
-        account_number: accountNum,
-        account_name: accountName,
-        payment_day: paymentDay,
+      // Single webhook call with session_id, status: "complete", and all fields
+      const sessionPayload = {
+        session_id: sessionId.current,
+        stage: "Complete — Application Submitted",
+        ...completePayload,
+      };
+      const r = await fetch(ZAPIER_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(sessionPayload),
       });
+      if (!r.ok) throw new Error(`Webhook error: ${r.status}`);
     } catch (e) {
       console.error(e);
       setEmailError(true);
