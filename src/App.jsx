@@ -167,7 +167,7 @@ async function sendApplicationEmail(data) {
   };
   const r = await fetch(ZAPIER_WEBHOOK_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "text/plain" },
     body: JSON.stringify(payload),
   });
   if (!r.ok) throw new Error(`Webhook error: ${r.status}`);
@@ -181,7 +181,7 @@ async function sendPartialWebhook(payload) {
   try {
     await fetch(ZAPIER_WEBHOOK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload),
     });
   } catch (e) {
