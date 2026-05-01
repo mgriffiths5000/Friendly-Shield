@@ -264,7 +264,7 @@ const CUSTOM_BENEFITS = [
 ];
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
-const Btn = ({ children, onClick, disabled }) => (
+const Btn = ({ children, onClick, disabled, fullWidth }) => (
   <button
     onClick={onClick}
     disabled={disabled}
@@ -279,6 +279,7 @@ const Btn = ({ children, onClick, disabled }) => (
       cursor: disabled ? "not-allowed" : "pointer",
       fontFamily: "inherit",
       transition: "background 0.2s",
+      width: fullWidth ? "100%" : "auto",
     }}
   >
     {children}
@@ -723,7 +724,7 @@ const PricingTable = ({ band, selectedLevel, selectedType, onSelectLevel, onSele
             outlineOffset: 2,
           }}
         >
-          <div className="fs-small" style={{ fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>Request further information</div>
+          <div className="fs-small" style={{ fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>Provide further information</div>
           {isCustomSel && <div className="fs-xsmall" style={{ color: G, fontWeight: 700 }}>{"\u2713"} selected</div>}
         </div>
 
@@ -869,7 +870,8 @@ const CustomTierCard = ({ onSelect }) => {
   const handleEnter = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      const idealLeft = r.left + r.width / 2 - TOOLTIP_W / 2;
+      const anchorCentreX = r.left + r.width / 2;
+      const idealLeft = anchorCentreX - TOOLTIP_W / 2;
       const left = Math.max(8, Math.min(idealLeft, window.innerWidth - TOOLTIP_W - 8));
       const fitsAbove = r.top - TOOLTIP_H - 8 > 0;
       setTipPos({ top: fitsAbove ? r.top - TOOLTIP_H - 8 : r.bottom + 8, left, _flipped: fitsAbove });
@@ -881,28 +883,38 @@ const CustomTierCard = ({ onSelect }) => {
       ref={btnRef}
       onMouseEnter={handleEnter}
       onMouseLeave={() => setHovered(false)}
+      onTouchStart={e => { e.preventDefault(); hovered ? setHovered(false) : handleEnter(); }}
       style={{
         background: METALLIC_GRAD.Custom,
         borderRadius: 14,
-        padding: "22px 12px 18px",
-        textAlign: "center",
+        padding: "14px 16px",
         cursor: "default",
         boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
         border: "1px solid rgba(255,255,255,0.25)",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-        <img src={BHH_LOGO_URI} alt="Baker Hudson Health" style={{ height: 38, width: "auto", display: "block" }} />
+      <div className="fs-custom-inner">
+        {/* Logo */}
+        <div style={{ flexShrink: 0 }}>
+          <img src={BHH_LOGO_URI} alt="Baker Hudson Health" style={{ height: 36, width: "auto", display: "block" }} />
+        </div>
+
+        {/* Text */}
+        <div className="fs-custom-text">
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.4)", marginBottom: 2, letterSpacing: "0.02em" }}>
+            Custom Cover
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+            Tailored protection
+          </div>
+        </div>
+
+        {/* Hint badge */}
+        <div style={{ flexShrink: 0, display: "inline-block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.2)", borderRadius: 999, padding: "4px 8px" }}>
+          {"\u24d8"} <span className="fs-tap-hint" />
+        </div>
       </div>
-      <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.4)", marginBottom: 4, letterSpacing: "0.02em" }}>
-        Custom Cover
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.88)", textShadow: "0 1px 2px rgba(0,0,0,0.4)", marginBottom: 6 }}>
-        Tailored protection
-      </div>
-      <div style={{ display: "inline-block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.2)", borderRadius: 999, padding: "2px 8px" }}>
-        {"\u24d8"} <span className="fs-tap-hint" />
-      </div>
+
       {hovered && <CustomCoverTooltip style={{ top: tipPos.top, left: tipPos.left, _flipped: tipPos._flipped }} />}
     </div>
   );
@@ -1287,7 +1299,8 @@ export default function FriendlyShieldForm() {
                 Get Your Quotes &amp; Buy Online
               </span>
             </div>
-            <p style={{ color: "#6B7280", fontSize: 14, margin: 0, lineHeight: 1.7 }}>
+            {/* Desktop subtitle — hidden on mobile */}
+            <p className="fs-subtitle-desktop" style={{ color: "#6B7280", fontSize: 14, margin: 0, lineHeight: 1.7 }}>
               Enter your date of birth below to{" "}
               <strong style={{ color: "#374151" }}>see your personalised prices instantly</strong>
               {" "}with no medical questions and no waiting. If you like what you see, you can{" "}
@@ -1298,7 +1311,7 @@ export default function FriendlyShieldForm() {
           <div className="fs-tier-grid" style={{ marginBottom: 24 }}>
             <TierCard icon="🥉" tier="Bronze" sub="Essential cover" isOpen={activeTierCard === "Bronze"} onOpen={setActiveTierCard} />
             <TierCard icon="🥈" tier="Silver" sub="Enhanced cover" isOpen={activeTierCard === "Silver"} onOpen={setActiveTierCard} />
-            <TierCard icon="🥇" tier="Gold"   sub="Comprehensive"  isOpen={activeTierCard === "Gold"}   onOpen={setActiveTierCard} />
+            <TierCard icon="🥇" tier="Gold"   sub="Extended Cover"  isOpen={activeTierCard === "Gold"}   onOpen={setActiveTierCard} />
             <div className="fs-custom-card">
               <CustomTierCard onSelect={() => {
                 setIsCustomCover(true);
@@ -1349,10 +1362,18 @@ export default function FriendlyShieldForm() {
             ))}
           </div>
           <div style={{ marginTop: 18 }}>
-            <Btn onClick={handleDOBSubmit} disabled={!dobValid}>
+            <Btn onClick={handleDOBSubmit} disabled={!dobValid} fullWidth>
               See My Quotes {"\u2192"}
             </Btn>
           </div>
+          {/* Mobile subtitle — shown below DOB on mobile only */}
+          <p className="fs-subtitle-mobile" style={{ color: "#6B7280", fontSize: 13, margin: "14px 0 0", lineHeight: 1.7, textAlign: "center" }}>
+            Enter your date of birth above to{" "}
+            <strong style={{ color: "#374151" }}>see your personalised prices instantly</strong>
+            {" "}with no medical questions and no waiting. If you like what you see, you can{" "}
+            <strong style={{ color: "#374151" }}>set up your policy in under 5 minutes</strong>
+            {" "}without speaking to anyone.
+          </p>
           <p style={{ fontSize: 11, color: "#9CA3AF", margin: "12px 0 0" }}>
             Available for ages 18–60 {"\u00b7"} Premiums from {"\u00a3"}10/month {"\u00b7"} No medical questions
           </p>
@@ -2051,9 +2072,20 @@ export default function FriendlyShieldForm() {
         }
         .fs-tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
         .fs-custom-card { grid-column: 1 / -1; }
+        /* Subtitle: desktop shows above tier cards, mobile shows below DOB */
+        .fs-subtitle-desktop { display: none; }
+        .fs-subtitle-mobile  { display: block; }
+        @media (min-width: 520px) {
+          .fs-subtitle-desktop { display: block; }
+          .fs-subtitle-mobile  { display: none; }
+        }
+        .fs-custom-inner { display: flex; flex-direction: row; align-items: center; gap: 14px; }
+        .fs-custom-text { flex: 1; text-align: left; }
         @media (min-width: 520px) {
           .fs-tier-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 9px; }
           .fs-custom-card { grid-column: auto; }
+          .fs-custom-inner { flex-direction: column; align-items: center; gap: 10px; padding: 8px 0; }
+          .fs-custom-text { flex: unset; text-align: center; }
         }
         @media (min-width: 768px) {
           .fs-tier-grid { gap: 20px; }
